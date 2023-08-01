@@ -1,81 +1,80 @@
 package com.ansj.vec;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TreeSet;
-
 import com.ansj.vec.domain.WordEntry;
 
-public class Word2vec {
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.Map.Entry;
 
-    private HashMap<String, float[]> wordMap = new HashMap<String, float[]>();
+public class Word2vec
+{
+
+    private final HashMap<String, float[]> wordMap = new HashMap<>();
 
     private int words;
+
     private int size;
+
     private int topNSize = 40;
 
     /**
      * 加载模型
-     * 
-     * @param path
-     *            模型的路径
-     * @throws IOException
+     *
+     * @param path 模型的路径
+     * @throws IOException IOException
      */
-    public void loadGoogleModel(String path) throws IOException {
-        DataInputStream dis = null;
-        BufferedInputStream bis = null;
-        double len = 0;
-        float vector = 0;
-        try {
-            bis = new BufferedInputStream(new FileInputStream(path));
-            dis = new DataInputStream(bis);
+    public void loadGoogleModel(String path) throws IOException
+    {
+        double len;
+        float vector;
+        try (
+                BufferedInputStream bis = new BufferedInputStream(Files.newInputStream(Paths.get(path)));
+                DataInputStream dis = new DataInputStream(bis)
+        )
+        {
             // //读取词数
             words = Integer.parseInt(readString(dis));
             // //大小
             size = Integer.parseInt(readString(dis));
             String word;
             float[] vectors = null;
-            for (int i = 0; i < words; i++) {
+            for (int i = 0; i < words; i++)
+            {
                 word = readString(dis);
                 vectors = new float[size];
                 len = 0;
-                for (int j = 0; j < size; j++) {
+                for (int j = 0; j < size; j++)
+                {
                     vector = readFloat(dis);
                     len += vector * vector;
-                    vectors[j] = (float) vector;
+                    vectors[j] = vector;
                 }
                 len = Math.sqrt(len);
-                for (int j = 0; j < size; j++) {
-                    vectors[j] /= len;
+                for (int j = 0; j < size; j++)
+                {
+                    vectors[j] /= (float)len;
                 }
                 wordMap.put(word, vectors);
                 dis.read();
             }
-        } finally {
-            bis.close();
-            dis.close();
         }
     }
 
     /**
      * 加载模型
-     * 
-     * @param path
-     *            模型的路径
-     * @throws IOException
+     *
+     * @param path 模型的路径
+     * @throws IOException IOException
      */
-    public void loadJavaModel(String path) throws IOException {
-        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(path)))) {
+    public void loadJavaModel(String path) throws IOException
+    {
+        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(Files.newInputStream(Paths.get(path)))))
+        {
             words = dis.readInt();
             size = dis.readInt();
 
@@ -83,11 +82,13 @@ public class Word2vec {
 
             String key = null;
             float[] value = null;
-            for (int i = 0; i < words; i++) {
+            for (int i = 0; i < words; i++)
+            {
                 double len = 0;
                 key = dis.readUTF();
                 value = new float[size];
-                for (int j = 0; j < size; j++) {
+                for (int j = 0; j < size; j++)
+                {
                     vector = dis.readFloat();
                     len += vector * vector;
                     value[j] = vector;
@@ -95,7 +96,8 @@ public class Word2vec {
 
                 len = Math.sqrt(len);
 
-                for (int j = 0; j < size; j++) {
+                for (int j = 0; j < size; j++)
+                {
                     value[j] /= len;
                 }
                 wordMap.put(key, value);
@@ -107,86 +109,106 @@ public class Word2vec {
     private static final int MAX_SIZE = 50;
 
     /**
-     * 近义词
-     * 
-     * @return
+     * 近义词推断
+     *
+     * @param word0 第一个单词
+     * @param word1 第二个单词
+     * @param word2 第三个单词
+     * @return 与给定单词相关联的按相似度排序的单词列表
      */
-    public TreeSet<WordEntry> analogy(String word0, String word1, String word2) {
+    public TreeSet<WordEntry> analogy(String word0, String word1, String word2)
+    {
         float[] wv0 = getWordVector(word0);
         float[] wv1 = getWordVector(word1);
         float[] wv2 = getWordVector(word2);
 
-        if (wv1 == null || wv2 == null || wv0 == null) {
+        if (wv1 == null || wv2 == null || wv0 == null)
+        {
             return null;
         }
         float[] wordVector = new float[size];
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < size; i++)
+        {
             wordVector[i] = wv1[i] - wv0[i] + wv2[i];
         }
         float[] tempVector;
         String name;
-        List<WordEntry> wordEntrys = new ArrayList<WordEntry>(topNSize);
-        for (Entry<String, float[]> entry : wordMap.entrySet()) {
+        List<WordEntry> topNEntries = new ArrayList<>(topNSize);
+        for (Entry<String, float[]> entry : wordMap.entrySet())
+        {
             name = entry.getKey();
-            if (name.equals(word0) || name.equals(word1) || name.equals(word2)) {
+            if (name.equals(word0) || name.equals(word1) || name.equals(word2))
+            {
                 continue;
             }
             float dist = 0;
             tempVector = entry.getValue();
-            for (int i = 0; i < wordVector.length; i++) {
+            for (int i = 0; i < wordVector.length; i++)
+            {
                 dist += wordVector[i] * tempVector[i];
             }
-            insertTopN(name, dist, wordEntrys);
+            insertTopN(name, dist, topNEntries);
         }
-        return new TreeSet<WordEntry>(wordEntrys);
+        return new TreeSet<>(topNEntries);
     }
 
-    private void insertTopN(String name, float score, List<WordEntry> wordsEntrys) {
-        if (wordsEntrys.size() < topNSize) {
-            wordsEntrys.add(new WordEntry(name, score));
+    private void insertTopN(String name, float score, List<WordEntry> wordsEntry)
+    {
+        if (wordsEntry.size() < topNSize)
+        {
+            wordsEntry.add(new WordEntry(name, score));
             return;
         }
         float min = Float.MAX_VALUE;
         int minOffe = 0;
-        for (int i = 0; i < topNSize; i++) {
-            WordEntry wordEntry = wordsEntrys.get(i);
-            if (min > wordEntry.score) {
+        for (int i = 0; i < topNSize; i++)
+        {
+            WordEntry wordEntry = wordsEntry.get(i);
+            if (min > wordEntry.score)
+            {
                 min = wordEntry.score;
                 minOffe = i;
             }
         }
-        if (score > min) {
-            wordsEntrys.set(minOffe, new WordEntry(name, score));
+        if (score > min)
+        {
+            wordsEntry.set(minOffe, new WordEntry(name, score));
         }
     }
 
-    public Set<WordEntry> distance(String queryWord) {
+    public Set<WordEntry> distance(String queryWord)
+    {
         float[] center = wordMap.get(queryWord);
-        if (center == null) {
+        if (center == null)
+        {
             return Collections.emptySet();
         }
-        int resultSize = wordMap.size() < topNSize ? wordMap.size() : topNSize;
-        TreeSet<WordEntry> result = new TreeSet<WordEntry>();
+        int resultSize = Math.min(wordMap.size(), topNSize);
+        TreeSet<WordEntry> result = new TreeSet<>();
         double min = Float.MIN_VALUE;
-        for (Map.Entry<String, float[]> entry : wordMap.entrySet()) {
+        for (Map.Entry<String, float[]> entry : wordMap.entrySet())
+        {
             String key = entry.getKey();
-            if (key == null || key.equals(queryWord)) {
+            if (key == null || key.equals(queryWord))
+            {
                 continue;
             }
             float[] vector = entry.getValue();
             float dist = 0;
-            for (int i = 0; i < vector.length; i++) {
+            for (int i = 0; i < vector.length; i++)
+            {
                 dist += center[i] * vector[i];
             }
-            if (dist <= min) {
+            if (dist <= min)
+            {
                 continue;
             }
             result.add(new WordEntry(entry.getKey(), dist));
-            if (result.size() > resultSize) {
-                if (!result.isEmpty()) {
-                    result.pollLast();
-                }
-                if (!result.isEmpty()) {
+            if (result.size() > resultSize)
+            {
+                result.pollLast();
+                if (!result.isEmpty())
+                {
                     min = result.last().score;
                 }
             }
@@ -194,33 +216,42 @@ public class Word2vec {
         return result;
     }
 
-    public Set<WordEntry> distance(List<String> words) {
-        if (words == null || words.isEmpty()) {
+    public Set<WordEntry> distance(List<String> words)
+    {
+        if (words == null || words.isEmpty())
+        {
             return null;
         }
         float[] center = null;
-        for (String word : words) {
+        for (String word : words)
+        {
             center = sum(center, wordMap.get(word));
         }
-        if (center == null) {
+        if (center == null)
+        {
             return Collections.emptySet();
         }
-        int resultSize = wordMap.size() < topNSize ? wordMap.size() : topNSize;
+        int resultSize = Math.min(wordMap.size(), topNSize);
         TreeSet<WordEntry> result = new TreeSet<WordEntry>();
         double min = Float.MIN_VALUE;
-        for (Map.Entry<String, float[]> entry : wordMap.entrySet()) {
+        for (Map.Entry<String, float[]> entry : wordMap.entrySet())
+        {
             String key = entry.getKey();
-            if (key == null || words.contains(key)) {
+            if (key == null || words.contains(key))
+            {
                 continue;
             }
             float[] vector = entry.getValue();
             float dist = 0;
-            for (int i = 0; i < vector.length; i++) {
+            for (int i = 0; i < vector.length; i++)
+            {
                 dist += center[i] * vector[i];
             }
-            if (dist > min) {
+            if (dist > min)
+            {
                 result.add(new WordEntry(entry.getKey(), dist));
-                if (resultSize < result.size()) {
+                if (resultSize < result.size())
+                {
                     result.pollLast();
                     min = result.last().score;
                 }
@@ -230,33 +261,40 @@ public class Word2vec {
         return result;
     }
 
-    private float[] sum(float[] center, float[] fs) {
-        if (center == null && fs == null) {
+    private float[] sum(float[] center, float[] fs)
+    {
+        if (center == null && fs == null)
+        {
             return null;
         }
-        if (fs == null) {
+        if (fs == null)
+        {
             return center;
         }
-        if (center == null) {
+        if (center == null)
+        {
             return fs;
         }
-        for (int i = 0; i < fs.length; i++) {
+        for (int i = 0; i < fs.length; i++)
+        {
             center[i] += fs[i];
         }
         return center;
     }
 
     /**
-     * 得到词向量
-     * 
-     * @param word
-     * @return
+     * Get the word vector for a given word.
+     *
+     * @param word The word for which to get the vector.
+     * @return The word vector as an array of floats.
      */
-    public float[] getWordVector(String word) {
+    public float[] getWordVector(String word)
+    {
         return wordMap.get(word);
     }
 
-    public static float readFloat(InputStream is) throws IOException {
+    public static float readFloat(InputStream is) throws IOException
+    {
         byte[] bytes = new byte[4];
         is.read(bytes);
         return getFloat(bytes);
@@ -264,13 +302,14 @@ public class Word2vec {
 
     /**
      * 读取一个float
-     * 
-     * @param b
-     * @return
+     *
+     * @param b byte数组，包含4个字节的float数据
+     * @return float数值
      */
-    public static float getFloat(byte[] b) {
+    public static float getFloat(byte[] b)
+    {
         int accum = 0;
-        accum = accum | (b[0] & 0xff) << 0;
+        accum = accum | (b[0] & 0xff);
         accum = accum | (b[1] & 0xff) << 8;
         accum = accum | (b[2] & 0xff) << 16;
         accum = accum | (b[3] & 0xff) << 24;
@@ -279,22 +318,25 @@ public class Word2vec {
 
     /**
      * 读取一个字符串
-     * 
-     * @param dis
-     * @return
-     * @throws IOException
+     *
+     * @param dis DataInputStream对象，用于读取字节流
+     * @return 从字节流中读取的字符串
+     * @throws IOException 如果在读取过程中发生I/O错误
      */
-    private static String readString(DataInputStream dis) throws IOException {
+    private static String readString(DataInputStream dis) throws IOException
+    {
         // TODO Auto-generated method stub
         byte[] bytes = new byte[MAX_SIZE];
         byte b = dis.readByte();
         int i = -1;
         StringBuilder sb = new StringBuilder();
-        while (b != 32 && b != 10) {
+        while (b != 32 && b != 10)
+        {
             i++;
             bytes[i] = b;
             b = dis.readByte();
-            if (i == 49) {
+            if (i == 49)
+            {
                 sb.append(new String(bytes));
                 i = -1;
                 bytes = new byte[MAX_SIZE];
@@ -304,23 +346,28 @@ public class Word2vec {
         return sb.toString();
     }
 
-    public int getTopNSize() {
+    public int getTopNSize()
+    {
         return topNSize;
     }
 
-    public void setTopNSize(int topNSize) {
+    public void setTopNSize(int topNSize)
+    {
         this.topNSize = topNSize;
     }
 
-    public HashMap<String, float[]> getWordMap() {
+    public HashMap<String, float[]> getWordMap()
+    {
         return wordMap;
     }
 
-    public int getWords() {
+    public int getWords()
+    {
         return words;
     }
 
-    public int getSize() {
+    public int getSize()
+    {
         return size;
     }
 
