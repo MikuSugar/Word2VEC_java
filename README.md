@@ -1,3 +1,7 @@
+# TODO
+在这个项目基础上实现node2vec👷
+# README
+
 源项目链接：https://github.com/NLPchina/Word2VEC_java
 
 在源项目中做了如下处理：
