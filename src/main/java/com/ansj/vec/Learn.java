@@ -8,10 +8,7 @@ import com.ansj.vec.util.MapCount;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 public class Learn
@@ -68,25 +65,26 @@ public class Learn
     }
 
     /**
-     * trainModel
+     * Trains a model using the given file.
      *
-     * @throws IOException
+     * @param file the file containing the training data
+     * @throws IOException if an I/O error occurs while reading the file
      */
     private void trainModel(File file) throws IOException
     {
+        Random random = new Random();
         try (BufferedReader br = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()))))
         {
-            String temp = null;
-            long nextRandom = 5;
+            String line;
             int wordCount = 0;
             int lastWordCount = 0;
             int wordCountActual = 0;
-            while ((temp = br.readLine()) != null)
+            while ((line = br.readLine()) != null)
             {
                 if (wordCount - lastWordCount > 10000)
                 {
-                    System.out.println(
-                            "alpha:" + alpha + "\tProgress: " + (int)(wordCountActual / (double)(trainWordsCount + 1) * 100) + "%");
+                    System.out.println("alpha:" + alpha + "\tProgress: " + String.format("%.4f",
+                            (wordCountActual / (double)(trainWordsCount)) * 100) + "%");
                     wordCountActual += wordCount - lastWordCount;
                     lastWordCount = wordCount;
                     alpha = startingAlpha * (1 - wordCountActual / (double)(trainWordsCount + 1));
@@ -95,12 +93,12 @@ public class Learn
                         alpha = startingAlpha * 0.0001;
                     }
                 }
-                String[] strs = temp.split(" ");
+                String[] strs = line.split("[\\s　]+");
                 wordCount += strs.length;
-                List<WordNeuron> sentence = new ArrayList<WordNeuron>();
-                for (int i = 0; i < strs.length; i++)
+                List<WordNeuron> sentence = new ArrayList<>();
+                for (String str : strs)
                 {
-                    Neuron entry = wordMap.get(strs[i]);
+                    Neuron entry = wordMap.get(str);
                     if (entry == null)
                     {
                         continue;
@@ -112,8 +110,8 @@ public class Learn
                     {
                         double ran = (Math.sqrt(
                                 entry.freq / (sample * trainWordsCount)) + 1) * (sample * trainWordsCount) / entry.freq;
-                        nextRandom = nextRandom * 25214903917L + 11;
-                        if (ran < (nextRandom & 0xFFFF) / (double)65536)
+
+                        if (ran < random.nextDouble())
                         {
                             continue;
                         }
@@ -123,14 +121,14 @@ public class Learn
 
                 for (int index = 0; index < sentence.size(); index++)
                 {
-                    nextRandom = nextRandom * 25214903917L + 11;
+
                     if (isCbow)
                     {
-                        cbowGram(index, sentence, (int)nextRandom % window);
+                        cbowGram(index, sentence, random.nextInt() % window);
                     }
                     else
                     {
-                        skipGram(index, sentence, (int)nextRandom % window);
+                        skipGram(index, sentence, random.nextInt() % window);
                     }
                 }
 
@@ -150,7 +148,6 @@ public class Learn
      */
     private void skipGram(int index, List<WordNeuron> sentence, int b)
     {
-        // TODO Auto-generated method stub
         WordNeuron word = sentence.get(index);
         int a, c;
         for (a = b; a < window * 2 + 1 - b; a++)
@@ -211,16 +208,16 @@ public class Learn
     }
 
     /**
-     * 词袋模型
+     * cbowGram
      *
-     * @param index
-     * @param sentence
-     * @param b
+     * @param index    the index of the word in the sentence
+     * @param sentence the sentence containing the word
+     * @param b        the context window size
      */
     private void cbowGram(int index, List<WordNeuron> sentence, int b)
     {
         WordNeuron word = sentence.get(index);
-        int a, c = 0;
+        int a, c;
 
         List<Neuron> neurons = word.neurons;
         double[] neu1e = new double[layerSize];// 误差项
