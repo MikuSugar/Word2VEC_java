@@ -40,7 +40,7 @@ public class Learn
 
     private int trainWordsCount = 0;
 
-    private final int MAX_EXP = 6;
+    private int MAX_EXP = 6;
 
     public Learn(Boolean isCbow, Integer layerSize, Integer window, Double alpha, Double sample)
     {
@@ -95,7 +95,7 @@ public class Learn
                 }
                 String[] strs = line.split("[\\s　]+");
                 wordCount += strs.length;
-                List<WordNeuron> sentence = new ArrayList<>();
+                List<WordNeuron> sentence = new ArrayList<>(strs.length);
                 for (String str : strs)
                 {
                     Neuron entry = wordMap.get(str);
@@ -181,6 +181,7 @@ public class Learn
                 }
                 else
                 {
+                    //这行代码的作用是将预测值 f 进行映射，将其从范围 [-MAX_EXP, MAX_EXP] 映射到 [0, EXP_TABLE_SIZE]
                     f = (f + MAX_EXP) * ((double)EXP_TABLE_SIZE / MAX_EXP / 2);
                     f = expTable[(int)f];
                 }
@@ -189,11 +190,9 @@ public class Learn
                 // Propagate errors output -> hidden
                 for (c = 0; c < layerSize; c++)
                 {
+                    //Propagate errors output -> hidden
                     neu1e[c] += g * out.syn1[c];
-                }
-                // Learn weights hidden -> output
-                for (c = 0; c < layerSize; c++)
-                {
+                    //Learn weights hidden -> output
                     out.syn1[c] += g * we.syn0[c];
                 }
             }
@@ -404,7 +403,6 @@ public class Learn
      *
      * @param summaryFile     合并文件
      * @param classifiedFiles 分类文件
-     * @throws IOException
      */
     public void learnFile(File summaryFile, File[] classifiedFiles) throws IOException
     {
@@ -498,4 +496,8 @@ public class Learn
         this.isCbow = isCbow;
     }
 
+    public void setMAX_EXP(int MAX_EXP)
+    {
+        this.MAX_EXP = MAX_EXP;
+    }
 }

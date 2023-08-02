@@ -1,9 +1,6 @@
 package com.ansj.vec.domain;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class WordNeuron extends Neuron
 {
@@ -15,21 +12,21 @@ public class WordNeuron extends Neuron
 
     public int[] codeArr = null;
 
-    public List<Neuron> makeNeurons()
+    public void makeNeurons()
     {
         if (neurons != null)
         {
-            return neurons;
+            return;
         }
         Neuron neuron = this;
-        neurons = new LinkedList<>();
+        neurons = new ArrayList<>();
         while ((neuron = neuron.parent) != null)
         {
             neurons.add(neuron);
         }
         if (neurons.isEmpty())
         {
-            return neurons;
+            return;
         }
         Collections.reverse(neurons);
         codeArr = new int[neurons.size()];
@@ -39,8 +36,6 @@ public class WordNeuron extends Neuron
             codeArr[i - 1] = neurons.get(i).code;
         }
         codeArr[codeArr.length - 1] = this.code;
-
-        return neurons;
     }
 
     public WordNeuron(String name, double freq, int layerSize)
