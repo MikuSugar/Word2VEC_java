@@ -5,3 +5,5 @@
 /bin
 .git
 /target/
+model.bin
+.idea
