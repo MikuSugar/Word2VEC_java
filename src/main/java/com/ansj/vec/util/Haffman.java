@@ -8,9 +8,16 @@ import com.ansj.vec.domain.HiddenNeuron;
 import com.ansj.vec.domain.Neuron;
 
 /**
- * 构建Haffman编码树
+ * Constructs Huffman coding tree.
+ * <p>
+ * This class is responsible for constructing a Huffman coding tree.
+ * The tree is built by merging neurons from the given collection until only one neuron remains.
+ * Neurons are merged based on their frequency values.
+ * <p>
+ * The constructor requires the size of the hidden layer as a parameter.
+ * The hidden layer size determines the number of neurons in the hidden layer of the tree.
  *
- * @author ansj
+ * @since 1.0
  */
 public class Haffman
 {

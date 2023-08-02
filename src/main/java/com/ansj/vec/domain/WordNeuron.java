@@ -27,6 +27,10 @@ public class WordNeuron extends Neuron
         {
             neurons.add(neuron);
         }
+        if (neurons.isEmpty())
+        {
+            return neurons;
+        }
         Collections.reverse(neurons);
         codeArr = new int[neurons.size()];
 
@@ -54,9 +58,9 @@ public class WordNeuron extends Neuron
     /**
      * Creates a WordNeuron object for supervised creation of Hoffman tree.
      *
-     * @param name The name of the WordNeuron.
-     * @param freq The frequency of the WordNeuron.
-     * @param category The category of the WordNeuron.
+     * @param name      The name of the WordNeuron.
+     * @param freq      The frequency of the WordNeuron.
+     * @param category  The category of the WordNeuron.
      * @param layerSize The size of the layer.
      */
     public WordNeuron(String name, double freq, int category, int layerSize)
@@ -70,6 +74,20 @@ public class WordNeuron extends Neuron
         {
             syn0[i] = (random.nextDouble() - 0.5) / layerSize;
         }
+    }
+
+    @Override
+    public int compareTo(Neuron neuron)
+    {
+        if (this.category == neuron.category)
+        {
+            if (neuron instanceof WordNeuron && this.freq == neuron.freq)
+            {
+                return this.name.compareTo(((WordNeuron)neuron).name);
+            }
+            return Double.compare(this.freq, neuron.freq);
+        }
+        return Integer.compare(this.category, neuron.category);
     }
 
 }

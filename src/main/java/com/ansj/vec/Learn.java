@@ -74,7 +74,7 @@ public class Learn
      */
     private void trainModel(File file) throws IOException
     {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file))))
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()))))
         {
             String temp = null;
             long nextRandom = 5;
@@ -383,10 +383,10 @@ public class Learn
     }
 
     /**
-     * 根据文件学习
+     * Learn from a file
      *
-     * @param file
-     * @throws IOException
+     * @param file The file to learn from
+     * @throws IOException If an I/O error occurs
      */
     public void learnFile(File file) throws IOException
     {

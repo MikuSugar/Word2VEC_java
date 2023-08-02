@@ -1,5 +1,9 @@
 package com.ansj.vec.domain;
 
+/**
+ * Neuron is an abstract class that represents a neuron in a neural network, implementing the Comparable interface to
+ * allow comparison between neurons.
+ */
 public abstract class Neuron implements Comparable<Neuron>
 {
     public double freq;
