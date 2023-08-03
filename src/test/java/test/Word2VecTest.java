@@ -16,6 +16,7 @@ public class Word2VecTest
         Word2vec vec = new Word2vec();
         vec.loadJavaModel("model.bin");
         // 距离最近的词
+        System.out.println(vec.distance("中国"));
         System.out.println("邓小平：" + vec.distance("邓小平"));
         System.out.println("魔术队:" + vec.distance("魔术队"));
         System.out.println("过年：" + vec.distance("过年"));
@@ -34,7 +35,7 @@ public class Word2VecTest
         System.out.println("###########################");
         System.out.println(vec.analogy("毛泽东", "邓小平", "毛泽东思想"));
         System.out.println("###########################");
-        System.out.println(vec.analogy("女人", "男人", "女王"));
+        System.out.println(vec.analogy("女人", "女儿", "男人"));
         System.out.println("###########################");
         System.out.println(vec.analogy("北京", "中国", "巴黎"));
         // 聚类
