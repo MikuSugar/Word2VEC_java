@@ -1,4 +1,4 @@
-package test;
+package me.mikusugar.node2vec;
 
 import me.mikusugar.node2vec.AliasSampling;
 
