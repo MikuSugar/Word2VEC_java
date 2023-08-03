@@ -31,6 +31,18 @@ public class AliasSampling
         setup(probability);
     }
 
+    public AliasSampling(int[] nodes, double[] weights)
+    {
+        this.nodes = nodes;
+        this.j = new int[nodes.length];
+        this.q = new double[nodes.length];
+        this.random = new Random();
+        //归一化
+        final double[] probability = normalization(weights);
+
+        setup(probability);
+    }
+
     private void setup(double[] probability)
     {
         int k = probability.length;
@@ -68,6 +80,12 @@ public class AliasSampling
     }
 
     private double[] normalization(int[] weights)
+    {
+        double[] doubleWeights = Arrays.stream(weights).asDoubleStream().toArray();
+        return normalization(doubleWeights);
+    }
+
+    private double[] normalization(double[] weights)
     {
         double sum = Arrays.stream(weights).sum();
         double[] probability = new double[weights.length];
