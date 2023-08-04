@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author mikusugar
@@ -29,9 +30,12 @@ public class Node2VecTest
     {
         Node2Vec node2Vec = new Node2Vec();
         node2Vec.loadJavaModel(karateModelPath);
-        System.out.println("22:" + node2Vec.closestNodes(22));
 
-        System.out.println("1 22" + node2Vec.closestNodes(Arrays.asList(1,22)));
+        int node = 22;
+        System.out.println(node + ":" + node2Vec.closestNodes(node));
+
+        final List<Integer> list = Arrays.asList(1, 22, 14);
+        System.out.println(list + "::" + node2Vec.closestNodes(list));
         node2Vec.getNodeMap().forEach((k, v) -> System.out.println(k + "::" + Arrays.toString(v)));
     }
 

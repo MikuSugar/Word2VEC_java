@@ -274,7 +274,7 @@ public class Word2vec
         }
         if (center == null)
         {
-            return fs;
+            return Arrays.copyOf(fs, fs.length);
         }
         for (int i = 0; i < fs.length; i++)
         {
