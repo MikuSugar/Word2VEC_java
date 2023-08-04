@@ -6,6 +6,7 @@ import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -14,7 +15,7 @@ import java.util.Map.Entry;
 public class Word2vec
 {
 
-    private final HashMap<String, float[]> wordMap = new HashMap<>();
+    private final HashMap<String, double[]> wordMap = new HashMap<>();
 
     private int words;
 
@@ -31,7 +32,7 @@ public class Word2vec
     public void loadGoogleModel(String path) throws IOException
     {
         double len;
-        float vector;
+        double vector;
         try (
                 BufferedInputStream bis = new BufferedInputStream(Files.newInputStream(Paths.get(path)));
                 DataInputStream dis = new DataInputStream(bis)
@@ -42,22 +43,22 @@ public class Word2vec
             // //大小
             size = Integer.parseInt(readString(dis));
             String word;
-            float[] vectors = null;
+            double[] vectors = null;
             for (int i = 0; i < words; i++)
             {
                 word = readString(dis);
-                vectors = new float[size];
+                vectors = new double[size];
                 len = 0;
                 for (int j = 0; j < size; j++)
                 {
-                    vector = readFloat(dis);
+                    vector = readDouble(dis);
                     len += vector * vector;
                     vectors[j] = vector;
                 }
                 len = Math.sqrt(len);
                 for (int j = 0; j < size; j++)
                 {
-                    vectors[j] /= (float)len;
+                    vectors[j] /= len;
                 }
                 wordMap.put(word, vectors);
                 dis.read();
@@ -78,18 +79,18 @@ public class Word2vec
             words = dis.readInt();
             size = dis.readInt();
 
-            float vector = 0;
+            double vector;
 
-            String key = null;
-            float[] value = null;
+            String key;
+            double[] value;
             for (int i = 0; i < words; i++)
             {
                 double len = 0;
                 key = dis.readUTF();
-                value = new float[size];
+                value = new double[size];
                 for (int j = 0; j < size; j++)
                 {
-                    vector = dis.readFloat();
+                    vector = dis.readDouble();
                     len += vector * vector;
                     value[j] = vector;
                 }
@@ -118,30 +119,30 @@ public class Word2vec
      */
     public TreeSet<WordEntry> analogy(String word0, String word1, String word2)
     {
-        float[] wv0 = getWordVector(word0);
-        float[] wv1 = getWordVector(word1);
-        float[] wv2 = getWordVector(word2);
+        double[] wv0 = getWordVector(word0);
+        double[] wv1 = getWordVector(word1);
+        double[] wv2 = getWordVector(word2);
 
         if (wv1 == null || wv2 == null || wv0 == null)
         {
             return null;
         }
-        float[] wordVector = new float[size];
+        double[] wordVector = new double[size];
         for (int i = 0; i < size; i++)
         {
             wordVector[i] = wv1[i] - wv0[i] + wv2[i];
         }
-        float[] tempVector;
+        double[] tempVector;
         String name;
         List<WordEntry> topNEntries = new ArrayList<>(topNSize);
-        for (Entry<String, float[]> entry : wordMap.entrySet())
+        for (Entry<String, double[]> entry : wordMap.entrySet())
         {
             name = entry.getKey();
             if (name.equals(word0) || name.equals(word1) || name.equals(word2))
             {
                 continue;
             }
-            float dist = 0;
+            double dist = 0;
             tempVector = entry.getValue();
             for (int i = 0; i < wordVector.length; i++)
             {
@@ -152,14 +153,14 @@ public class Word2vec
         return new TreeSet<>(topNEntries);
     }
 
-    private void insertTopN(String name, float score, List<WordEntry> wordsEntry)
+    private void insertTopN(String name, double score, List<WordEntry> wordsEntry)
     {
         if (wordsEntry.size() < topNSize)
         {
             wordsEntry.add(new WordEntry(name, score));
             return;
         }
-        float min = Float.MAX_VALUE;
+        double min = Double.MAX_VALUE;
         int minOffe = 0;
         for (int i = 0; i < topNSize; i++)
         {
@@ -178,23 +179,23 @@ public class Word2vec
 
     public Set<WordEntry> distance(String queryWord)
     {
-        float[] center = wordMap.get(queryWord);
+        double[] center = wordMap.get(queryWord);
         if (center == null)
         {
             return Collections.emptySet();
         }
         int resultSize = Math.min(wordMap.size(), topNSize);
         TreeSet<WordEntry> result = new TreeSet<>();
-        double min = Float.MIN_VALUE;
-        for (Map.Entry<String, float[]> entry : wordMap.entrySet())
+        double min = Double.MIN_VALUE;
+        for (Map.Entry<String, double[]> entry : wordMap.entrySet())
         {
             String key = entry.getKey();
             if (key == null || key.equals(queryWord))
             {
                 continue;
             }
-            float[] vector = entry.getValue();
-            float dist = 0;
+            double[] vector = entry.getValue();
+            double dist = 0;
             for (int i = 0; i < vector.length; i++)
             {
                 dist += center[i] * vector[i];
@@ -222,7 +223,7 @@ public class Word2vec
         {
             return null;
         }
-        float[] center = null;
+        double[] center = null;
         for (String word : words)
         {
             center = sum(center, wordMap.get(word));
@@ -232,17 +233,17 @@ public class Word2vec
             return Collections.emptySet();
         }
         int resultSize = Math.min(wordMap.size(), topNSize);
-        TreeSet<WordEntry> result = new TreeSet<WordEntry>();
-        double min = Float.MIN_VALUE;
-        for (Map.Entry<String, float[]> entry : wordMap.entrySet())
+        TreeSet<WordEntry> result = new TreeSet<>();
+        double min = Double.MIN_VALUE;
+        for (Map.Entry<String, double[]> entry : wordMap.entrySet())
         {
             String key = entry.getKey();
             if (key == null || words.contains(key))
             {
                 continue;
             }
-            float[] vector = entry.getValue();
-            float dist = 0;
+            double[] vector = entry.getValue();
+            double dist = 0;
             for (int i = 0; i < vector.length; i++)
             {
                 dist += center[i] * vector[i];
@@ -261,7 +262,7 @@ public class Word2vec
         return result;
     }
 
-    private float[] sum(float[] center, float[] fs)
+    private double[] sum(double[] center, double[] fs)
     {
         if (center == null && fs == null)
         {
@@ -288,32 +289,28 @@ public class Word2vec
      * @param word The word for which to get the vector.
      * @return The word vector as an array of floats.
      */
-    public float[] getWordVector(String word)
+    public double[] getWordVector(String word)
     {
         return wordMap.get(word);
     }
 
-    public static float readFloat(InputStream is) throws IOException
+    public static double readDouble(InputStream is) throws IOException
     {
-        byte[] bytes = new byte[4];
+        byte[] bytes = new byte[8];
         is.read(bytes);
-        return getFloat(bytes);
+        return getDouble(bytes);
     }
 
     /**
-     * 读取一个float
+     * Convert a byte array to a double value.
      *
-     * @param b byte数组，包含4个字节的float数据
-     * @return float数值
+     * @param b The byte array to convert.
+     * @return The double value represented by the byte array.
      */
-    public static float getFloat(byte[] b)
+    public static double getDouble(byte[] b)
     {
-        int accum = 0;
-        accum = accum | (b[0] & 0xff);
-        accum = accum | (b[1] & 0xff) << 8;
-        accum = accum | (b[2] & 0xff) << 16;
-        accum = accum | (b[3] & 0xff) << 24;
-        return Float.intBitsToFloat(accum);
+        ByteBuffer buffer = ByteBuffer.wrap(b);
+        return buffer.getDouble();
     }
 
     /**
@@ -325,7 +322,6 @@ public class Word2vec
      */
     private static String readString(DataInputStream dis) throws IOException
     {
-        // TODO Auto-generated method stub
         byte[] bytes = new byte[MAX_SIZE];
         byte b = dis.readByte();
         int i = -1;
@@ -356,7 +352,7 @@ public class Word2vec
         this.topNSize = topNSize;
     }
 
-    public HashMap<String, float[]> getWordMap()
+    public HashMap<String, double[]> getWordMap()
     {
         return wordMap;
     }

@@ -139,6 +139,76 @@ public class Learn
         }
     }
 
+    private void trainModel(List<int[]> data)
+    {
+        Random random = new Random();
+        int wordCount = 0;
+        int lastWordCount = 0;
+        int wordCountActual = 0;
+        for (int[] line : data)
+        {
+            if (wordCount - lastWordCount > 10000)
+            {
+                System.out.println("alpha:" + alpha + "\tProgress: " + String.format("%.4f",
+                        (wordCountActual / (double)(trainWordsCount)) * 100) + "%");
+                wordCountActual += wordCount - lastWordCount;
+                lastWordCount = wordCount;
+                alpha = startingAlpha * (1 - wordCountActual / (double)(trainWordsCount + 1));
+                if (alpha < startingAlpha * 0.0001)
+                {
+                    alpha = startingAlpha * 0.0001;
+                }
+            }
+            String[] strs = new String[line.length];
+            for (int i = 0; i < line.length; i++)
+            {
+                strs[i] = String.valueOf(line[i]);
+            }
+
+            wordCount += strs.length;
+            List<WordNeuron> sentence = new ArrayList<>(strs.length);
+            for (String str : strs)
+            {
+                Neuron entry = wordMap.get(str);
+                if (entry == null)
+                {
+                    continue;
+                }
+                // The subsampling randomly discards frequent words while
+                // keeping the
+                // ranking same
+                if (sample > 0)
+                {
+                    double ran = (Math.sqrt(
+                            entry.freq / (sample * trainWordsCount)) + 1) * (sample * trainWordsCount) / entry.freq;
+
+                    if (ran < random.nextDouble())
+                    {
+                        continue;
+                    }
+                }
+                sentence.add((WordNeuron)entry);
+            }
+
+            for (int index = 0; index < sentence.size(); index++)
+            {
+
+                if (isCbow)
+                {
+                    cbowGram(index, sentence, random.nextInt() % window);
+                }
+                else
+                {
+                    skipGram(index, sentence, random.nextInt() % window);
+                }
+            }
+
+        }
+        System.out.println("Vocab size: " + wordMap.size());
+        System.out.println("Words in train file: " + trainWordsCount);
+        System.out.println("success train over!");
+    }
+
     /**
      * skipGram
      *
@@ -315,6 +385,23 @@ public class Learn
         }
     }
 
+    private void readVocab(List<int[]> data)
+    {
+        MapCount<String> mc = new MapCount<>();
+        for (int[] line : data)
+        {
+            trainWordsCount += line.length;
+            for (int v : line)
+            {
+                mc.add(String.valueOf(v));
+            }
+        }
+        for (Entry<String, Integer> e : mc.get().entrySet())
+        {
+            wordMap.put(e.getKey(), new WordNeuron(e.getKey(), (double)e.getValue() / mc.size(), layerSize));
+        }
+    }
+
     /**
      * 对文本进行预分类
      *
@@ -328,7 +415,10 @@ public class Learn
         {
             // 对多个文件学习
             MapCount<String> mc = new MapCount<>();
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(files[category]))))
+            try (
+                    BufferedReader br = new BufferedReader(
+                            new InputStreamReader(Files.newInputStream(files[category].toPath())))
+            )
             {
                 String temp = null;
                 while ((temp = br.readLine()) != null)
@@ -398,6 +488,17 @@ public class Learn
         trainModel(file);
     }
 
+    public void learnData(List<int[]> data)
+    {
+        readVocab(data);
+        new Haffman(layerSize).make(wordMap.values());
+        for (Neuron neuron : wordMap.values())
+        {
+            ((WordNeuron)neuron).makeNeurons();
+        }
+        trainModel(data);
+    }
+
     /**
      * 根据预分类的文件学习
      *
@@ -419,7 +520,7 @@ public class Learn
     /**
      * 保存模型
      */
-    public void saveModel(File file)
+    public void saveModel(File file) throws IOException
     {
         try (
                 DataOutputStream dataOutputStream = new DataOutputStream(
@@ -428,20 +529,16 @@ public class Learn
         {
             dataOutputStream.writeInt(wordMap.size());
             dataOutputStream.writeInt(layerSize);
-            double[] syn0 = null;
+            double[] syn0;
             for (Entry<String, Neuron> element : wordMap.entrySet())
             {
                 dataOutputStream.writeUTF(element.getKey());
                 syn0 = ((WordNeuron)element.getValue()).syn0;
                 for (double d : syn0)
                 {
-                    dataOutputStream.writeFloat(((Double)d).floatValue());
+                    dataOutputStream.writeDouble(d);
                 }
             }
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
     }
 

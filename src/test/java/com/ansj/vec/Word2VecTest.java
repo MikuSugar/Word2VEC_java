@@ -1,12 +1,11 @@
 package com.ansj.vec;
 
+import com.ansj.vec.util.WordKmeans;
+import com.ansj.vec.util.WordKmeans.Classes;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
-
-import com.ansj.vec.Word2vec;
-import com.ansj.vec.util.WordKmeans;
-import com.ansj.vec.util.WordKmeans.Classes;
 
 public class Word2VecTest
 {
@@ -22,9 +21,9 @@ public class Word2VecTest
         System.out.println("过年：" + vec.distance("过年"));
         System.out.println("香港" + " 澳门：" + vec.distance(Arrays.asList("香港", "澳门")));
         // // 计算词之间的距离
-        HashMap<String, float[]> map = vec.getWordMap();
-        float[] center1 = map.get("春节");
-        float[] center2 = map.get("过年");
+        HashMap<String, double[]> map = vec.getWordMap();
+        double[] center1 = map.get("春节");
+        double[] center2 = map.get("过年");
         double dics = 0;
         for (int i = 0; i < center1.length; i++)
         {

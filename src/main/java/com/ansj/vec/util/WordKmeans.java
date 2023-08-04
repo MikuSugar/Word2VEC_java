@@ -1,13 +1,7 @@
 package com.ansj.vec.util;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 import com.ansj.vec.Word2vec;
@@ -36,13 +30,13 @@ public class WordKmeans
 
     }
 
-    private HashMap<String, float[]> wordMap = null;
+    private final HashMap<String, double[]> wordMap;
 
-    private int iter;
+    private final int iter;
 
-    private Classes[] cArray = null;
+    private final Classes[] cArray;
 
-    public WordKmeans(HashMap<String, float[]> wordMap, int clcn, int iter)
+    public WordKmeans(HashMap<String, double[]> wordMap, int clcn, int iter)
     {
         this.wordMap = wordMap;
         this.iter = iter;
@@ -52,10 +46,10 @@ public class WordKmeans
     public Classes[] explain()
     {
         //first 取前clcn个点
-        Iterator<Entry<String, float[]>> iterator = wordMap.entrySet().iterator();
+        Iterator<Entry<String, double[]>> iterator = wordMap.entrySet().iterator();
         for (int i = 0; i < cArray.length; i++)
         {
-            Entry<String, float[]> next = iterator.next();
+            Entry<String, double[]> next = iterator.next();
             cArray[i] = new Classes(i, next.getValue());
         }
 
@@ -69,7 +63,7 @@ public class WordKmeans
             iterator = wordMap.entrySet().iterator();
             while (iterator.hasNext())
             {
-                Entry<String, float[]> next = iterator.next();
+                Entry<String, double[]> next = iterator.next();
                 double miniScore = Double.MAX_VALUE;
                 double tempScore;
                 int classesId = 0;
@@ -97,11 +91,11 @@ public class WordKmeans
 
     public static class Classes
     {
-        private int id;
+        private final int id;
 
-        private float[] center;
+        private final double[] center;
 
-        public Classes(int id, float[] center)
+        public Classes(int id, double[] center)
         {
             this.id = id;
             this.center = center.clone();
@@ -109,7 +103,7 @@ public class WordKmeans
 
         Map<String, Double> values = new HashMap<>();
 
-        public double distance(float[] value)
+        public double distance(double[] value)
         {
             double sum = 0;
             for (int i = 0; i < value.length; i++)
@@ -127,15 +121,12 @@ public class WordKmeans
         /**
          * 重新计算中心点
          *
-         * @param wordMap
+         * @param wordMap wordMap
          */
-        public void updateCenter(HashMap<String, float[]> wordMap)
+        public void updateCenter(HashMap<String, double[]> wordMap)
         {
-            for (int i = 0; i < center.length; i++)
-            {
-                center[i] = 0;
-            }
-            float[] value = null;
+            Arrays.fill(center, 0);
+            double[] value;
             for (String keyWord : values.keySet())
             {
                 value = wordMap.get(keyWord);
@@ -155,27 +146,17 @@ public class WordKmeans
          */
         public void clean()
         {
-            // TODO Auto-generated method stub
             values.clear();
         }
 
         /**
          * 取得每个类别的前n个结果
          *
-         * @param n
-         * @return
          */
         public List<Entry<String, Double>> getTop(int n)
         {
-            List<Map.Entry<String, Double>> arrayList = new ArrayList<Map.Entry<String, Double>>(values.entrySet());
-            Collections.sort(arrayList, new Comparator<Map.Entry<String, Double>>()
-            {
-                @Override
-                public int compare(Entry<String, Double> o1, Entry<String, Double> o2)
-                {
-                    return o1.getValue() > o2.getValue() ? 1 : -1;
-                }
-            });
+            List<Map.Entry<String, Double>> arrayList = new ArrayList<>(values.entrySet());
+            arrayList.sort(Comparator.comparingDouble(Entry::getValue));
             int min = Math.min(n, arrayList.size() - 1);
             if (min <= 1)
                 return Collections.emptyList();

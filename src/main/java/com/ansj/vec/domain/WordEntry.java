@@ -4,9 +4,9 @@ public class WordEntry implements Comparable<WordEntry>
 {
     public String name;
 
-    public float score;
+    public double score;
 
-    public WordEntry(String name, float score)
+    public WordEntry(String name, double score)
     {
         this.name = name;
         this.score = score;

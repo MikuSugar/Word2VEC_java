@@ -1,7 +1,5 @@
 package me.mikusugar.node2vec;
 
-import me.mikusugar.node2vec.AliasSampling;
-
 import java.util.HashMap;
 import java.util.Map;
 
