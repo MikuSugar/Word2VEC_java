@@ -13,7 +13,7 @@ import java.util.List;
  */
 public class Node2VecTest
 {
-    private final String karateModelPath = "karate_model.bin";
+    private final String karateModelPath = "karate_model.emb";
 
     @Test
     public void learnKarateTest() throws IOException
@@ -29,7 +29,7 @@ public class Node2VecTest
     public void node2vecKarateTest() throws IOException
     {
         Node2Vec node2Vec = new Node2Vec();
-        node2Vec.loadJavaModel(karateModelPath);
+        node2Vec.loadEmbModel(karateModelPath);
 
         int node = 22;
         System.out.println(node + ":" + node2Vec.closestNodes(node));

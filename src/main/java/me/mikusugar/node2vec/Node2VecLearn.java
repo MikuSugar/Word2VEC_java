@@ -1,10 +1,15 @@
 package me.mikusugar.node2vec;
 
 import com.ansj.vec.Learn;
+import com.ansj.vec.domain.Neuron;
+import com.ansj.vec.domain.WordNeuron;
 
-import java.io.File;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author mikusugar
@@ -49,6 +54,8 @@ public class Node2VecLearn
 
     private final Learn learn;
 
+    private Map<Integer, double[]> nodeMap;
+
     public Node2VecLearn(double p, double q, int walkLength, int numWalks, int layerSize, int window, double sample,
             double alpha)
     {
@@ -83,11 +90,40 @@ public class Node2VecLearn
         final RandomWalk randomWalk = new RandomWalk(p, q, walkLength, numWalks, graph);
         final List<int[]> simulateWalks = randomWalk.simulateWalks();
         learn.learnData(simulateWalks);
+        final Map<String, Neuron> wordMap = learn.getWordMap();
+        nodeMap = new HashMap<>(wordMap.size());
+
+        wordMap.forEach((k, v) -> nodeMap.put(Integer.parseInt(k), ((WordNeuron)v).syn0));
     }
 
     public void saveMode(String path) throws IOException
     {
-        learn.saveModel(new File(path));
+        int dimension = -1;
+        for (double[] v : nodeMap.values())
+        {
+            dimension = v.length;
+            break;
+        }
+        if (dimension == -1)
+        {
+            throw new IllegalArgumentException("nodeMap is empty!");
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(path)))
+        {
+            writer.write(nodeMap.size() + " " + dimension + System.lineSeparator());
+            for (Map.Entry<Integer, double[]> entry : nodeMap.entrySet())
+            {
+                int node = entry.getKey();
+                double[] vector = entry.getValue();
+                writer.write(node + "");
+                for (double v : vector)
+                {
+                    writer.write(" " + v);
+                }
+                writer.write(System.lineSeparator());
+            }
+        }
     }
 
     public void setP(double p)

@@ -6,5 +6,6 @@
 .git
 /target/
 *.bin
+*.emb
 .idea
 

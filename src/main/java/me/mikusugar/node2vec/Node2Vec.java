@@ -1,10 +1,9 @@
 package me.mikusugar.node2vec;
 
-import com.ansj.vec.Word2vec;
-
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * @description
@@ -13,22 +12,35 @@ import java.util.stream.Collectors;
  */
 public class Node2Vec
 {
-    private final Word2vec word2vec;
 
     private final int topNSize = 10;
 
     public Node2Vec()
     {
-        this.word2vec = new Word2vec();
     }
 
     private Map<Integer, double[]> nodeMap;
 
-    public void loadJavaModel(String path) throws IOException
+    public void loadEmbModel(String path) throws IOException
     {
-        this.word2vec.loadJavaModel(path);
-        this.nodeMap = word2vec.getWordMap().entrySet().stream()
-                .collect(Collectors.toMap(e -> Integer.parseInt(e.getKey()), Map.Entry::getValue));
+        try (BufferedReader reader = new BufferedReader(new FileReader(path)))
+        {
+            final String[] strs = reader.readLine().split(" ");
+            final int size = Integer.parseInt(strs[0]);
+            final int dimension = Integer.parseInt(strs[1]);
+            this.nodeMap = new HashMap<>(size);
+            for (int i = 0; i < size; i++)
+            {
+                final String[] s = reader.readLine().split(" ");
+                final int node = Integer.parseInt(s[0]);
+                final double[] vector = new double[dimension];
+                for (int j = 0; j < dimension; j++)
+                {
+                    vector[j] = Double.parseDouble(s[j + 1]);
+                }
+                nodeMap.put(node, vector);
+            }
+        }
     }
 
     public List<NodeEntry> closestNodes(Collection<Integer> nodes)

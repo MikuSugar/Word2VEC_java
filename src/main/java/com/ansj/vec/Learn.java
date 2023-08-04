@@ -597,4 +597,9 @@ public class Learn
     {
         this.MAX_EXP = MAX_EXP;
     }
+
+    public Map<String, Neuron> getWordMap()
+    {
+        return wordMap;
+    }
 }
