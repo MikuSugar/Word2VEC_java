@@ -83,7 +83,7 @@ public class RandomWalk
             final List<int[]> neighbors = graph.neighbors(cur);
             if (neighbors.isEmpty())
             {
-                walks[idx++] = cur;
+                break;
             }
             else
             {
@@ -99,6 +99,12 @@ public class RandomWalk
                     walks[idx++] = next;
                 }
             }
+        }
+        if (idx < walkLength)
+        {
+            int[] ans = new int[idx];
+            System.arraycopy(walks, 0, ans, 0, idx);
+            return ans;
         }
         return walks;
     }
