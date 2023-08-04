@@ -4,10 +4,7 @@ import com.ansj.vec.Word2vec;
 import com.ansj.vec.domain.WordEntry;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -38,6 +35,12 @@ public class Node2Vec
     public Set<WordEntry> closestNodes(int node)
     {
         return word2vec.distance(String.valueOf(node));
+    }
+
+    public Map<Integer, double[]> getNodeMap()
+    {
+        return word2vec.getWordMap().entrySet().stream()
+                .collect(Collectors.toMap(e -> Integer.parseInt(e.getKey()), Map.Entry::getValue));
     }
 
 }

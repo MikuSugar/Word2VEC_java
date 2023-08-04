@@ -17,7 +17,7 @@ public class ParseUtilsTest
     public void testEdgeListFile2Graph() throws IOException
     {
         final String path = HelpTestUtils.getResourcePath() + "/karate.edgelist";
-        final Graph graph = ParseUtils.edgeListFile2Graph(path);
+        final Graph graph = ParseUtils.edgeListFile2Graph(path, false);
         try (BufferedReader reader = new BufferedReader(new FileReader(path)))
         {
             while (reader.ready())

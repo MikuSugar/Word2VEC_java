@@ -22,7 +22,7 @@ public class ParseUtils
      * @throws IOException           if an I/O error occurs while reading the file
      * @throws IllegalStateException if a line in the file does not have two or three integers separated by whitespace
      */
-    public static Graph edgeListFile2Graph(String path) throws IOException
+    public static Graph edgeListFile2Graph(String path, boolean isDirection) throws IOException
     {
         Graph graph = new Graph();
         try (final BufferedReader reader = new BufferedReader(new FileReader(path)))
@@ -42,10 +42,18 @@ public class ParseUtils
                 if (strs.length == 3)
                 {
                     graph.addEdge(src, dst, Integer.parseInt(strs[2]));
+                    if (!isDirection)
+                    {
+                        graph.addEdge(dst, src, Integer.parseInt(strs[2]));
+                    }
                 }
                 else
                 {
-                    graph.addEdge(src, dst);
+                    if (!isDirection)
+                    {
+                        graph.addEdge(src, dst);
+                        graph.addEdge(dst, src);
+                    }
                 }
             }
         }

@@ -18,10 +18,9 @@ public class Node2VecTest
     public void learnKarateTest() throws IOException
     {
         final String path = HelpTestUtils.getResourcePath() + "/karate.edgelist";
-        final Graph graph = ParseUtils.edgeListFile2Graph(path);
-        Node2VecLearn learn = new Node2VecLearn();
+        final Graph graph = ParseUtils.edgeListFile2Graph(path, false);
+        Node2VecLearn learn = new Node2VecLearn(1, 1, 80, 10, 256, 10, 1e-3, 0.25);
         learn.lean(graph);
-
         learn.saveMode(karateModelPath);
     }
 
@@ -32,7 +31,8 @@ public class Node2VecTest
         node2Vec.loadJavaModel(karateModelPath);
         System.out.println("22:" + node2Vec.closestNodes(22));
 
-        System.out.println("27 30 3" + node2Vec.closestNodes(Arrays.asList(27, 30, 3)));
+        System.out.println("1 22" + node2Vec.closestNodes(Arrays.asList(1,22)));
+        node2Vec.getNodeMap().forEach((k, v) -> System.out.println(k + "::" + Arrays.toString(v)));
     }
 
 }
