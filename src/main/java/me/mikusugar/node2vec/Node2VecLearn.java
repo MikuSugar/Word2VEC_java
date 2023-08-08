@@ -56,8 +56,12 @@ public class Node2VecLearn
 
     private Map<Integer, double[]> nodeMap;
 
+    private boolean isCbow = false;
+
+    private int MAX_EAP = 6;
+
     public Node2VecLearn(double p, double q, int walkLength, int numWalks, int layerSize, int window, double sample,
-            double alpha)
+            double alpha, boolean isCbow, int MAX_EAP)
     {
         this.p = p;
         this.q = q;
@@ -67,7 +71,10 @@ public class Node2VecLearn
         this.window = window;
         this.sample = sample;
         this.alpha = alpha;
-        this.learn = new Learn(false, layerSize, window, alpha, sample);
+        this.isCbow = isCbow;
+        this.MAX_EAP = MAX_EAP;
+        this.learn = new Learn(isCbow, layerSize, window, alpha, sample);
+        this.learn.setMAX_EXP(MAX_EAP);
         check();
     }
 
@@ -168,5 +175,17 @@ public class Node2VecLearn
     {
         this.alpha = alpha;
         this.learn.setAlpha(alpha);
+    }
+
+    public void setCbow(boolean cbow)
+    {
+        isCbow = cbow;
+        this.learn.setIsCbow(isCbow);
+    }
+
+    public void setMAX_EAP(int MAX_EAP)
+    {
+        this.MAX_EAP = MAX_EAP;
+        this.learn.setMAX_EXP(MAX_EAP);
     }
 }
