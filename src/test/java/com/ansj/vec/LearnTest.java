@@ -1,10 +1,9 @@
 package com.ansj.vec;
 
+import me.mikusugar.node2vec.HelpTestUtils;
+
 import java.io.File;
 import java.io.IOException;
-
-import com.ansj.vec.Learn;
-import me.mikusugar.node2vec.HelpTestUtils;
 
 public class LearnTest
 {
@@ -14,7 +13,8 @@ public class LearnTest
         final String corpusFilePath = HelpTestUtils.getResourcePath() + "/corpus.txt";
         Learn learn = new Learn();
         learn.setLayerSize(200);
-        learn.setMAX_EXP(10);
+        learn.setMAX_EXP(6);
+//        learn.setNegative(20);
 
         learn.learnFile(new File(corpusFilePath));
         learn.saveModel(new File("model.bin"));

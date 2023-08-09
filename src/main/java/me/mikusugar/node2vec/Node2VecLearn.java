@@ -60,6 +60,8 @@ public class Node2VecLearn
 
     private int MAX_EAP = 6;
 
+    private int negative = 0;
+
     public Node2VecLearn(double p, double q, int walkLength, int numWalks, int layerSize, int window, double sample,
             double alpha, boolean isCbow, int MAX_EAP)
     {
@@ -187,5 +189,11 @@ public class Node2VecLearn
     {
         this.MAX_EAP = MAX_EAP;
         this.learn.setMAX_EXP(MAX_EAP);
+    }
+
+    public void setNegative(int negative)
+    {
+        this.negative = negative;
+        this.learn.setNegative(negative);
     }
 }

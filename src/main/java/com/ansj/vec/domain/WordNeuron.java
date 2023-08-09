@@ -12,6 +12,10 @@ public class WordNeuron extends Neuron
 
     public int[] codeArr = null;
 
+    public double[] negativeSyn1;
+
+
+
     public void makeNeurons()
     {
         if (neurons != null)

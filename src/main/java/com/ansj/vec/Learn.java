@@ -10,11 +10,14 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 public class Learn
 {
 
     private final Map<String, Neuron> wordMap = new HashMap<>();
+
+    private MapCount<String> mc;
 
     /**
      * 训练多少个特征
@@ -41,6 +44,21 @@ public class Learn
     private int trainWordsCount = 0;
 
     private int MAX_EXP = 6;
+
+    public void setNegative(int negative)
+    {
+        this.negative = negative;
+    }
+
+    private int negative = 0;
+
+    private List<String> wordLists;
+
+    private int[] table;
+
+    private static final int TABLE_SIZE = 100000000;
+
+    private final Random random = new Random();
 
     public Learn(Boolean isCbow, Integer layerSize, Integer window, Double alpha, Double sample)
     {
@@ -233,40 +251,18 @@ public class Learn
             }
 
             double[] neu1e = new double[layerSize];// 误差项
-            // HIERARCHICAL SOFTMAX
-            List<Neuron> neurons = word.neurons;
             WordNeuron we = sentence.get(c);
-            for (int i = 0; i < neurons.size(); i++)
+            // HIERARCHICAL SOFTMAX
+            if (negative <= 0)
             {
-                HiddenNeuron out = (HiddenNeuron)neurons.get(i);
-                double f = 0;
-                // Propagate hidden -> output
-                for (int j = 0; j < layerSize; j++)
-                {
-                    f += we.syn0[j] * out.syn1[j];
-                }
-                if (f <= -MAX_EXP || f >= MAX_EXP)
-                {
-                    continue;
-                }
-                else
-                {
-                    //这行代码的作用是将预测值 f 进行映射，将其从范围 [-MAX_EXP, MAX_EXP] 映射到 [0, EXP_TABLE_SIZE]
-                    f = (f + MAX_EXP) * ((double)EXP_TABLE_SIZE / MAX_EXP / 2);
-                    f = expTable[(int)f];
-                }
-                // 'g' is the gradient multiplied by the learning rate
-                double g = (1 - word.codeArr[i] - f) * alpha;
-                // Propagate errors output -> hidden
-                for (c = 0; c < layerSize; c++)
-                {
-                    //Propagate errors output -> hidden
-                    neu1e[c] += g * out.syn1[c];
-                    //Learn weights hidden -> output
-                    out.syn1[c] += g * we.syn0[c];
-                }
-            }
+                skipGramSoftMax(word, we, neu1e);
 
+            }
+            // NEGATIVE SAMPLING
+            else
+            {
+                skipGramNegativeSampling(we, neu1e);
+            }
             // Learn weights input -> hidden
             for (int j = 0; j < layerSize; j++)
             {
@@ -274,6 +270,97 @@ public class Learn
             }
         }
 
+    }
+
+    private void skipGramNegativeSampling(WordNeuron cur, double[] neu1e)
+    {
+        String target;
+        int label;
+        for (int d = 0; d < negative + 1; d++)
+        {
+            if (d == 0)
+            {
+                target = cur.name;
+                label = 1;
+            }
+            else
+            {
+                target = wordLists.get(table[random.nextInt(table.length)]);
+                if (target.equals(cur.name))
+                {
+                    continue;
+                }
+                label = 0;
+            }
+            final WordNeuron targetNeuron = (WordNeuron)wordMap.get(target);
+            final double g = getG(cur, targetNeuron, label);
+            for (int j = 0; j < layerSize; j++)
+            {
+                neu1e[j] += g * targetNeuron.negativeSyn1[j];
+                targetNeuron.negativeSyn1[j] += g * cur.syn0[j];
+            }
+        }
+    }
+
+    private void skipGramSoftMax(WordNeuron word, WordNeuron we, double[] neu1e)
+    {
+        int c;
+        List<Neuron> neurons = word.neurons;
+        for (int i = 0; i < neurons.size(); i++)
+        {
+            HiddenNeuron out = (HiddenNeuron)neurons.get(i);
+            // Propagate hidden -> output
+            double f = dot(we, out.syn1);
+            if (f <= -MAX_EXP || f >= MAX_EXP)
+            {
+                continue;
+            }
+            else
+            {
+                //这行代码的作用是将预测值 f 进行映射，将其从范围 [-MAX_EXP, MAX_EXP] 映射到 [0, EXP_TABLE_SIZE]
+                f = (f + MAX_EXP) * ((double)EXP_TABLE_SIZE / MAX_EXP / 2);
+                f = expTable[(int)f];
+            }
+            // 'g' is the gradient multiplied by the learning rate
+            double g = (1 - word.codeArr[i] - f) * alpha;
+            // Propagate errors output -> hidden
+            for (c = 0; c < layerSize; c++)
+            {
+                //Propagate errors output -> hidden
+                neu1e[c] += g * out.syn1[c];
+                //Learn weights hidden -> output
+                out.syn1[c] += g * we.syn0[c];
+            }
+        }
+    }
+
+    private double getG(WordNeuron we, WordNeuron targetNeuron, int label)
+    {
+        double f = dot(we, targetNeuron.negativeSyn1);
+        double g;
+        if (f > MAX_EXP)
+        {
+            g = (label - 1) * alpha;
+        }
+        else if (f < -MAX_EXP)
+        {
+            g = label * alpha;
+        }
+        else
+        {
+            g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * alpha;
+        }
+        return g;
+    }
+
+    private double dot(WordNeuron we, double[] targetNeuron)
+    {
+        double f = 0d;
+        for (int j = 0; j < layerSize; j++)
+        {
+            f += we.syn0[j] * targetNeuron[j];
+        }
+        return f;
     }
 
     /**
@@ -364,7 +451,7 @@ public class Learn
      */
     private void readVocab(File file) throws IOException
     {
-        MapCount<String> mc = new MapCount<>();
+        this.mc = new MapCount<>();
         try (BufferedReader br = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()))))
         {
             String temp;
@@ -378,16 +465,29 @@ public class Learn
                 }
             }
         }
+        helpRead();
+    }
+
+    private void helpRead()
+    {
         for (Entry<String, Integer> element : mc.get().entrySet())
         {
             wordMap.put(element.getKey(),
                     new WordNeuron(element.getKey(), (double)element.getValue() / mc.size(), layerSize));
         }
+        if (negative > 0)
+        {
+            wordLists = new ArrayList<>(mc.get().keySet());
+        }
+        else
+        {
+            this.mc = null;
+        }
     }
 
     private void readVocab(List<int[]> data)
     {
-        MapCount<String> mc = new MapCount<>();
+        this.mc = new MapCount<>();
         for (int[] line : data)
         {
             trainWordsCount += line.length;
@@ -396,10 +496,7 @@ public class Learn
                 mc.add(String.valueOf(v));
             }
         }
-        for (Entry<String, Integer> e : mc.get().entrySet())
-        {
-            wordMap.put(e.getKey(), new WordNeuron(e.getKey(), (double)e.getValue() / mc.size(), layerSize));
-        }
+        helpRead();
     }
 
     /**
@@ -477,6 +574,10 @@ public class Learn
     public void learnFile(File file) throws IOException
     {
         readVocab(file);
+        if (negative > 0)
+        {
+            initNegative();
+        }
         new Haffman(layerSize).make(wordMap.values());
 
         // 查找每个神经元
@@ -491,12 +592,53 @@ public class Learn
     public void learnData(List<int[]> data)
     {
         readVocab(data);
+        if (negative > 0)
+        {
+            initNegative();
+        }
         new Haffman(layerSize).make(wordMap.values());
         for (Neuron neuron : wordMap.values())
         {
             ((WordNeuron)neuron).makeNeurons();
         }
         trainModel(data);
+    }
+
+    /**
+     * Initialize the negative sampling table
+     */
+    private void initNegative()
+    {
+        this.table = new int[TABLE_SIZE];
+        Arrays.fill(table, -1);
+        final HashMap<String, Integer> mapCount = mc.get();
+        long trainWordsPow = 0;
+        final double power = 0.75;
+        for (int count : mapCount.values())
+        {
+            trainWordsPow += (long)Math.pow(count, power);
+        }
+        int i = 0;
+        double d1 = Math.pow(mapCount.get(wordLists.get(0)), power) / trainWordsPow;
+        for (int a = 0; a < TABLE_SIZE; a++)
+        {
+            table[a] = i;
+            if ((double)a / TABLE_SIZE > d1)
+            {
+                i++;
+                d1 += Math.pow(mapCount.get(wordLists.get(i)), power) / trainWordsPow;
+            }
+            if (i >= wordLists.size())
+            {
+                i = wordLists.size() - 1;
+            }
+        }
+        for (Neuron value : wordMap.values())
+        {
+            WordNeuron wordNeuron = (WordNeuron)value;
+            wordNeuron.negativeSyn1 = new double[layerSize];
+        }
+
     }
 
     /**
