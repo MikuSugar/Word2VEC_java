@@ -13,8 +13,8 @@ public class LearnTest
         final String corpusFilePath = HelpTestUtils.getResourcePath() + "/corpus.txt";
         Learn learn = new Learn();
         learn.setLayerSize(200);
-        learn.setMAX_EXP(6);
-//        learn.setNegative(20);
+        learn.setMAX_EXP(10);
+        learn.setNegative(5);
 
         learn.learnFile(new File(corpusFilePath));
         learn.saveModel(new File("model.bin"));

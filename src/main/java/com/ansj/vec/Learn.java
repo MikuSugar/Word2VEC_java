@@ -5,12 +5,12 @@ import com.ansj.vec.domain.Neuron;
 import com.ansj.vec.domain.WordNeuron;
 import com.ansj.vec.util.Haffman;
 import com.ansj.vec.util.MapCount;
+import me.mikusugar.node2vec.AliasSampling;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 public class Learn
 {
@@ -54,11 +54,7 @@ public class Learn
 
     private List<String> wordLists;
 
-    private int[] table;
-
-    private static final int TABLE_SIZE = 100000000;
-
-    private final Random random = new Random();
+    private AliasSampling negativeSampling;
 
     public Learn(Boolean isCbow, Integer layerSize, Integer window, Double alpha, Double sample)
     {
@@ -261,18 +257,18 @@ public class Learn
             // NEGATIVE SAMPLING
             else
             {
-                skipGramNegativeSampling(we, neu1e);
+                skipGramNegativeSampling(word, we, neu1e);
             }
             // Learn weights input -> hidden
             for (int j = 0; j < layerSize; j++)
             {
-                we.syn0[j] += neu1e[j];
+                word.syn0[j] += neu1e[j];
             }
         }
 
     }
 
-    private void skipGramNegativeSampling(WordNeuron cur, double[] neu1e)
+    private void skipGramNegativeSampling(WordNeuron input, WordNeuron we, double[] neu1e)
     {
         String target;
         int label;
@@ -280,24 +276,24 @@ public class Learn
         {
             if (d == 0)
             {
-                target = cur.name;
+                target = we.name;
                 label = 1;
             }
             else
             {
-                target = wordLists.get(table[random.nextInt(table.length)]);
-                if (target.equals(cur.name))
+                target = wordLists.get(negativeSampling.next());
+                if (target.equals(input.name))
                 {
                     continue;
                 }
                 label = 0;
             }
             final WordNeuron targetNeuron = (WordNeuron)wordMap.get(target);
-            final double g = getG(cur, targetNeuron, label);
+            final double g = getG(input, targetNeuron, label);
             for (int j = 0; j < layerSize; j++)
             {
                 neu1e[j] += g * targetNeuron.negativeSyn1[j];
-                targetNeuron.negativeSyn1[j] += g * cur.syn0[j];
+                targetNeuron.negativeSyn1[j] += g * input.syn0[j];
             }
         }
     }
@@ -334,9 +330,9 @@ public class Learn
         }
     }
 
-    private double getG(WordNeuron we, WordNeuron targetNeuron, int label)
+    private double getG(WordNeuron word, WordNeuron targetNeuron, int label)
     {
-        double f = dot(we, targetNeuron.negativeSyn1);
+        double f = dot(word, targetNeuron.negativeSyn1);
         double g;
         if (f > MAX_EXP)
         {
@@ -609,30 +605,17 @@ public class Learn
      */
     private void initNegative()
     {
-        this.table = new int[TABLE_SIZE];
-        Arrays.fill(table, -1);
+
         final HashMap<String, Integer> mapCount = mc.get();
-        long trainWordsPow = 0;
-        final double power = 0.75;
-        for (int count : mapCount.values())
+        int[] nodes = new int[wordLists.size()];
+        int[] count = new int[wordLists.size()];
+        for (int i = 0; i < wordLists.size(); i++)
         {
-            trainWordsPow += (long)Math.pow(count, power);
+            nodes[i] = i;
+            count[i] = mapCount.get(wordLists.get(i));
         }
-        int i = 0;
-        double d1 = Math.pow(mapCount.get(wordLists.get(0)), power) / trainWordsPow;
-        for (int a = 0; a < TABLE_SIZE; a++)
-        {
-            table[a] = i;
-            if ((double)a / TABLE_SIZE > d1)
-            {
-                i++;
-                d1 += Math.pow(mapCount.get(wordLists.get(i)), power) / trainWordsPow;
-            }
-            if (i >= wordLists.size())
-            {
-                i = wordLists.size() - 1;
-            }
-        }
+        this.negativeSampling = new AliasSampling(nodes, count);
+
         for (Neuron value : wordMap.values())
         {
             WordNeuron wordNeuron = (WordNeuron)value;

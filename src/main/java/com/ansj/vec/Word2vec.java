@@ -2,10 +2,7 @@ package com.ansj.vec;
 
 import com.ansj.vec.domain.WordEntry;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -15,7 +12,7 @@ import java.util.Map.Entry;
 public class Word2vec
 {
 
-    private final HashMap<String, double[]> wordMap = new HashMap<>();
+    private HashMap<String, double[]> wordMap = new HashMap<>();
 
     private int words;
 
@@ -104,6 +101,34 @@ public class Word2vec
                 wordMap.put(key, value);
             }
 
+        }
+    }
+
+    /**
+     * 加载模型
+     *
+     * @param path 模型的路径
+     * @throws IOException IOException
+     */
+    public void loadVecModel(String path) throws IOException
+    {
+        try (BufferedReader reader = new BufferedReader(new FileReader(path)))
+        {
+            final String[] strs = reader.readLine().split(" ");
+            final int count = Integer.parseInt(strs[0]);
+            final int dimension = Integer.parseInt(strs[1]);
+            wordMap = new HashMap<>(count);
+            for (int i = 0; i < count; i++)
+            {
+                final String[] line = reader.readLine().split(" ");
+                final String word = line[0];
+                final double[] vec = new double[dimension];
+                for (int j = 0; j < dimension; j++)
+                {
+                    vec[j] = Double.parseDouble(line[j + 1]);
+                }
+                wordMap.put(word, vec);
+            }
         }
     }
 
