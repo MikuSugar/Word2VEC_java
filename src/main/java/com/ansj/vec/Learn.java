@@ -122,8 +122,9 @@ public class Learn
                     // ranking same
                     if (sample > 0)
                     {
-                        double ran = (Math.sqrt(
-                                entry.freq / (sample * trainWordsCount)) + 1) * (sample * trainWordsCount) / entry.freq;
+                        double ran = (Math.sqrt(mc.get()
+                                .get(str) * 1.0 / (sample * trainWordsCount)) + 1) * (sample * trainWordsCount) / mc.get()
+                                .get(str);
 
                         if (ran < random.nextDouble())
                         {
@@ -193,8 +194,9 @@ public class Learn
                 // ranking same
                 if (sample > 0)
                 {
-                    double ran = (Math.sqrt(
-                            entry.freq / (sample * trainWordsCount)) + 1) * (sample * trainWordsCount) / entry.freq;
+                    double ran = (Math.sqrt(mc.get()
+                            .get(str) * 1.0 / (sample * trainWordsCount)) + 1) * (sample * trainWordsCount) / mc.get()
+                            .get(str);
 
                     if (ran < random.nextDouble())
                     {
@@ -474,10 +476,6 @@ public class Learn
         if (negative > 0)
         {
             wordLists = new ArrayList<>(mc.get().keySet());
-        }
-        else
-        {
-            this.mc = null;
         }
     }
 
