@@ -234,7 +234,7 @@ public class Learn
      */
     private void skipGram(int index, List<WordNeuron> sentence, int b)
     {
-        WordNeuron word = sentence.get(index);
+        WordNeuron input = sentence.get(index);
         int a, c;
         for (a = b; a < window * 2 + 1 - b; a++)
         {
@@ -253,18 +253,18 @@ public class Learn
             // HIERARCHICAL SOFTMAX
             if (negative <= 0)
             {
-                skipGramSoftMax(word, we, neu1e);
+                skipGramSoftMax(input, we, neu1e);
 
             }
             // NEGATIVE SAMPLING
             else
             {
-                skipGramNegativeSampling(word, we, neu1e);
+                skipGramNegativeSampling(input, we, neu1e);
             }
             // Learn weights input -> hidden
             for (int j = 0; j < layerSize; j++)
             {
-                word.syn0[j] += neu1e[j];
+                input.syn0[j] += neu1e[j];
             }
         }
 
@@ -292,10 +292,10 @@ public class Learn
             }
             final WordNeuron targetNeuron = (WordNeuron)wordMap.get(target);
             final double g = getG(input, targetNeuron, label);
-            for (int j = 0; j < layerSize; j++)
+            for (int i = 0; i < layerSize; i++)
             {
-                neu1e[j] += g * targetNeuron.negativeSyn1[j];
-                targetNeuron.negativeSyn1[j] += g * input.syn0[j];
+                neu1e[i] += g * targetNeuron.negativeSyn1[i];
+                targetNeuron.negativeSyn1[i] += g * input.syn0[i];
             }
         }
     }
@@ -332,9 +332,9 @@ public class Learn
         }
     }
 
-    private double getG(WordNeuron word, WordNeuron targetNeuron, int label)
+    private double getG(WordNeuron input, WordNeuron targetNeuron, int label)
     {
-        double f = dot(word, targetNeuron.negativeSyn1);
+        double f = dot(input, targetNeuron.negativeSyn1);
         double g;
         if (f > MAX_EXP)
         {
@@ -351,12 +351,12 @@ public class Learn
         return g;
     }
 
-    private double dot(WordNeuron we, double[] targetNeuron)
+    private double dot(WordNeuron input, double[] targetNeuron)
     {
         double f = 0d;
         for (int j = 0; j < layerSize; j++)
         {
-            f += we.syn0[j] * targetNeuron[j];
+            f += input.syn0[j] * targetNeuron[j];
         }
         return f;
     }
@@ -661,6 +661,25 @@ public class Learn
                 {
                     dataOutputStream.writeDouble(d);
                 }
+            }
+        }
+    }
+
+    public void saveEmbModel(File file) throws IOException
+    {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file)))
+        {
+            writer.write(wordMap.size() + " " + layerSize + System.lineSeparator());
+            double[] syn0;
+            for (Entry<String, Neuron> element : wordMap.entrySet())
+            {
+                writer.write(element.getKey());
+                syn0 = ((WordNeuron)element.getValue()).syn0;
+                for (double d : syn0)
+                {
+                    writer.write(" " + d);
+                }
+                writer.write(System.lineSeparator());
             }
         }
     }

@@ -123,9 +123,17 @@ public class Word2vec
                 final String[] line = reader.readLine().split(" ");
                 final String word = line[0];
                 final double[] vec = new double[dimension];
+                double len = 0;
                 for (int j = 0; j < dimension; j++)
                 {
-                    vec[j] = Double.parseDouble(line[j + 1]);
+                    final double v = Double.parseDouble(line[j + 1]);
+                    len += v * v;
+                    vec[j] = v;
+                }
+                len = Math.sqrt(len);
+                for (int j = 0; j < size; j++)
+                {
+                    vec[j] /= len;
                 }
                 wordMap.put(word, vec);
             }
