@@ -1,6 +1,6 @@
 package com.ansj.vec;
 
-import me.mikusugar.node2vec.HelpTestUtils;
+import me.mikusugar.HelpTestUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,6 +17,7 @@ public class LearnTest
         learn.setNegative(5);
 
         learn.learnFile(new File(corpusFilePath));
+        learn.saveEmbModel(new File("model.vec"));
         learn.saveModel(new File("model.bin"));
     }
 }

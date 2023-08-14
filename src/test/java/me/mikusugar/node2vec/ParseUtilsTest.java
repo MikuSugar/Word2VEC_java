@@ -1,5 +1,6 @@
 package me.mikusugar.node2vec;
 
+import me.mikusugar.HelpTestUtils;
 import org.junit.Test;
 
 import java.io.BufferedReader;

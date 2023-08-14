@@ -1,4 +1,4 @@
-package me.mikusugar.node2vec;
+package me.mikusugar;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
