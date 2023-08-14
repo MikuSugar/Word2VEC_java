@@ -1,6 +1,7 @@
 package me.mikusugar.node2vec;
 
 import me.mikusugar.HelpTestUtils;
+import me.mikusugar.word2vec.LoadModel;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -17,28 +18,29 @@ public class Node2VecTest
     private final String karateModelPath = "karate_model.emb";
 
     @Test
-    public void learnKarateTest() throws IOException
+    public void learnKarateTest() throws Exception
     {
         final String path = HelpTestUtils.getResourcePath() + "/karate.edgelist";
         final Graph graph = ParseUtils.edgeListFile2Graph(path, false);
-        Node2VecLearn learn = new Node2VecLearn(1, 1, 80, 10, 128, 10, 1e-3, 0.025, false, 6);
-        learn.lean(graph);
+        Node2VecLearn learn = new Node2VecLearn(1, 1, 80, 10, 128, 10, 1e-3, 0.025, 10, 10);
         learn.setNegative(10);
-        learn.saveMode(karateModelPath);
+        learn.lean(graph);
+
+        learn.saveBinaryMode(karateModelPath);
     }
 
     @Test
     public void node2vecKarateTest() throws IOException
     {
-        Node2Vec node2Vec = new Node2Vec();
-        node2Vec.loadEmbModel(karateModelPath);
+        LoadModel model = new LoadModel();
+        model.loadBinaryMode(karateModelPath);
 
-        int node = 22;
-        System.out.println(node + ":" + node2Vec.closestNodes(node));
+        String node = 22 + "";
+        System.out.println(node + ":" + model.closestWords(node));
 
-        final List<Integer> list = Arrays.asList(1, 22, 24);
-        System.out.println(list + "::" + node2Vec.closestNodes(list));
-        node2Vec.getNodeMap().forEach((k, v) -> System.out.println(k + "::" + Arrays.toString(v)));
+        final List<String> list = Arrays.asList("21", "22", "24");
+        System.out.println(list + "::" + model.closestWords(list));
+        model.getVecMap().forEach((k, v) -> System.out.println(k + "::" + Arrays.toString(v)));
     }
 
 }

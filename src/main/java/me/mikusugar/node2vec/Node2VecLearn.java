@@ -1,14 +1,13 @@
 package me.mikusugar.node2vec;
 
-import com.ansj.vec.Learn;
-import com.ansj.vec.domain.Neuron;
-import com.ansj.vec.domain.WordNeuron;
+import com.google.common.base.Preconditions;
+import me.mikusugar.word2vec.SkipGram;
+import me.mikusugar.word2vec.Word2Vec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
+import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,6 +17,8 @@ import java.util.Map;
  */
 public class Node2VecLearn
 {
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
     /*
     超参数p，控制遍历的返回前一个节点的概率。
     */
@@ -52,18 +53,16 @@ public class Node2VecLearn
 
     private double alpha = 0.025;
 
-    private final Learn learn;
+    private Word2Vec word2vec;
 
     private Map<Integer, double[]> nodeMap;
 
-    private boolean isCbow = false;
-
     private int MAX_EAP = 6;
 
-    private int negative = 0;
+    private int negative = 10;
 
     public Node2VecLearn(double p, double q, int walkLength, int numWalks, int layerSize, int window, double sample,
-            double alpha, boolean isCbow, int MAX_EAP)
+            double alpha, int MAX_EAP, int negative)
     {
         this.p = p;
         this.q = q;
@@ -73,66 +72,55 @@ public class Node2VecLearn
         this.window = window;
         this.sample = sample;
         this.alpha = alpha;
-        this.isCbow = isCbow;
         this.MAX_EAP = MAX_EAP;
-        this.learn = new Learn(isCbow, layerSize, window, alpha, sample);
-        this.learn.setMAX_EXP(MAX_EAP);
+        this.negative = negative;
+
+        this.word2vec = new SkipGram();
+        this.word2vec.setLayerSize(layerSize);
+        this.word2vec.setWindow(window);
+        this.word2vec.setSample(sample);
+        this.word2vec.setAlpha(alpha);
+        this.word2vec.setMAX_EXP(MAX_EAP);
+        this.word2vec.setNegative(negative);
         check();
     }
 
     private void check()
     {
-        if (this.window > this.walkLength)
-        {
-            throw new IllegalArgumentException("window参数必须小于walkLength");
-        }
+        Preconditions.checkArgument(this.window <= this.walkLength, "window参数必须小于walkLength");
+        Preconditions.checkArgument(negative > 0, "negative必须大于0");
     }
 
     public Node2VecLearn()
     {
-        this.learn = new Learn(false, layerSize, window, alpha, sample);
+
     }
 
-    public void lean(Graph graph)
+    public void lean(Graph graph) throws Exception
     {
         check();
         final RandomWalk randomWalk = new RandomWalk(p, q, walkLength, numWalks, graph);
-        final List<int[]> simulateWalks = randomWalk.simulateWalks();
-        learn.learnData(simulateWalks);
-        final Map<String, Neuron> wordMap = learn.getWordMap();
-        nodeMap = new HashMap<>(wordMap.size());
-
-        wordMap.forEach((k, v) -> nodeMap.put(Integer.parseInt(k), ((WordNeuron)v).syn0));
-    }
-
-    public void saveMode(String path) throws IOException
-    {
-        int dimension = -1;
-        for (double[] v : nodeMap.values())
+        File tempFile = null;
+        try
         {
-            dimension = v.length;
-            break;
+            tempFile = File.createTempFile("walks", ".txt");
+            logger.info("creat temp file {}.", tempFile.getAbsolutePath());
+            randomWalk.writeSimulateWalks(tempFile.getAbsolutePath());
+            this.word2vec.fitFile(tempFile.getAbsolutePath());
         }
-        if (dimension == -1)
+        finally
         {
-            throw new IllegalArgumentException("nodeMap is empty!");
-        }
-
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(path)))
-        {
-            writer.write(nodeMap.size() + " " + dimension + System.lineSeparator());
-            for (Map.Entry<Integer, double[]> entry : nodeMap.entrySet())
+            if (tempFile != null)
             {
-                int node = entry.getKey();
-                double[] vector = entry.getValue();
-                writer.write(node + "");
-                for (double v : vector)
-                {
-                    writer.write(" " + v);
-                }
-                writer.write(System.lineSeparator());
+                tempFile.delete();
+                logger.info("delete temp file {}.", tempFile.getAbsolutePath());
             }
         }
+    }
+
+    public void saveBinaryMode(String path) throws IOException
+    {
+        this.word2vec.saveBinaryModel(path);
     }
 
     public void setP(double p)
@@ -158,42 +146,36 @@ public class Node2VecLearn
     public void setLayerSize(int layerSize)
     {
         this.layerSize = layerSize;
-        this.learn.setLayerSize(layerSize);
+        this.word2vec.setLayerSize(layerSize);
     }
 
     public void setWindow(int window)
     {
         this.window = window;
-        this.learn.setWindow(window);
+        this.word2vec.setWindow(window);
     }
 
     public void setSample(double sample)
     {
         this.sample = sample;
-        this.learn.setSample(sample);
+        this.word2vec.setSample(sample);
     }
 
     public void setAlpha(double alpha)
     {
         this.alpha = alpha;
-        this.learn.setAlpha(alpha);
-    }
-
-    public void setCbow(boolean cbow)
-    {
-        isCbow = cbow;
-        this.learn.setIsCbow(isCbow);
+        this.word2vec.setAlpha(alpha);
     }
 
     public void setMAX_EAP(int MAX_EAP)
     {
         this.MAX_EAP = MAX_EAP;
-        this.learn.setMAX_EXP(MAX_EAP);
+        this.word2vec.setMAX_EXP(MAX_EAP);
     }
 
     public void setNegative(int negative)
     {
         this.negative = negative;
-        this.learn.setNegative(negative);
+        this.word2vec.setNegative(negative);
     }
 }

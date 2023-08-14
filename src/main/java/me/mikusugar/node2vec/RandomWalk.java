@@ -1,5 +1,13 @@
 package me.mikusugar.node2vec;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -9,6 +17,9 @@ import java.util.*;
  */
 public class RandomWalk
 {
+
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
     /*
     超参数p，控制遍历的返回前一个节点的概率。
      */
@@ -37,12 +48,12 @@ public class RandomWalk
     /**
      * 存储节点到邻居的可能性序列的结构<节点id，下一步选择器
      */
-    private Map<Integer, AliasSampling> aliasNodes;
+    private Int2ObjectMap<AliasSampling> aliasNodes;
 
     /**
      * 存储边的可能性序列的结构<上一个节点id,此时的节点id,下一步选择器
      */
-    private Map<Integer, Map<Integer, AliasSampling>> aliasEdges;
+    private Int2ObjectMap<Int2ObjectMap<AliasSampling>> aliasEdges;
 
     public RandomWalk(double p, double q, int walkLength, int numWalks, Graph graph)
     {
@@ -55,8 +66,8 @@ public class RandomWalk
 
     public List<int[]> simulateWalks()
     {
-        aliasEdges = new HashMap<>();
-        aliasNodes = new HashMap<>();
+        aliasEdges = new Int2ObjectOpenHashMap<>();
+        aliasNodes = new Int2ObjectOpenHashMap<>();
         final List<int[]> res = new ArrayList<>();
         for (int i = 0; i < numWalks; i++)
         {
@@ -70,6 +81,32 @@ public class RandomWalk
         }
 
         return res;
+    }
+
+    public void writeSimulateWalks(String path) throws IOException
+    {
+        final long startTime = System.currentTimeMillis();
+        logger.info("write simulateWalks to {}.", path);
+        aliasEdges = new Int2ObjectOpenHashMap<>();
+        aliasNodes = new Int2ObjectOpenHashMap<>();
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(path)))
+        {
+            for (int i = 0; i < numWalks; i++)
+            {
+                List<Integer> nodes = new ArrayList<>(graph.nodes());
+                Collections.shuffle(nodes);
+                for (int node : nodes)
+                {
+                    final int[] walks = node2vecWalk(node);
+                    for (int n : walks)
+                    {
+                        writer.write(n + " ");
+                    }
+                    writer.write(System.lineSeparator());
+                }
+            }
+        }
+        logger.info("write simulateWalks to {} success. take time:{}ms.", path, System.currentTimeMillis() - startTime);
     }
 
     private int[] node2vecWalk(int node)
@@ -111,7 +148,7 @@ public class RandomWalk
 
     private int getNextStep(int src, int dst)
     {
-        Map<Integer, AliasSampling> srcAliasMap = aliasEdges.computeIfAbsent(src, k -> new HashMap<>());
+        Map<Integer, AliasSampling> srcAliasMap = aliasEdges.computeIfAbsent(src, k -> new Int2ObjectOpenHashMap<>());
         AliasSampling aliasSampling = srcAliasMap.get(dst);
         if (aliasSampling == null)
         {
