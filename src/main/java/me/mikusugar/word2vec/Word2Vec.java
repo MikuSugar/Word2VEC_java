@@ -118,7 +118,7 @@ public abstract class Word2Vec
         return sentence;
     }
 
-    protected double getG(int input, int target, int label)
+    protected double getGradient(int input, int target, int label)
     {
         double f = dot(syn0[input], syn1[target]);
         double g;
@@ -209,7 +209,7 @@ public abstract class Word2Vec
 
     public void saveBinaryModel(String path) throws IOException
     {
-        logger.info("save model to path:{} ...", path);
+        logger.info("save binary model to path:{} ...", path);
         final long startTime = System.currentTimeMillis();
         try (
                 DataOutputStream dataOutputStream = new DataOutputStream(

@@ -103,7 +103,7 @@ public class SkipGram extends Word2Vec
                 }
                 label = 0;
             }
-            final double g = getG(input, target, label);
+            final double g = getGradient(input, target, label);
             for (int i = 0; i < layerSize; i++)
             {
                 neu1e[i] += g * syn1[target][i];

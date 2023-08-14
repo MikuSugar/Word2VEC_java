@@ -5,6 +5,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
+import static me.mikusugar.common.VectorUtils.calculateCosineSimilarity;
+
 /**
  * @description
  * @author mikusugar
@@ -126,40 +128,6 @@ public class Node2Vec
         }
         Collections.reverse(result);
         return result;
-    }
-
-    /**
-     * Calculates the cosine similarity between two vectors.
-     *
-     * @param vectorA the first vector
-     * @param vectorB the second vector
-     * @return the cosine similarity between the two vectors
-     * @throws IllegalArgumentException if the vectors have different dimensions or one or both vectors have zero norm
-     */
-    private static double calculateCosineSimilarity(double[] vectorA, double[] vectorB)
-    {
-        if (vectorA.length != vectorB.length)
-        {
-            throw new IllegalArgumentException("Vectors must have the same dimensions");
-        }
-
-        double dotProduct = 0.0;
-        double normA = 0.0;
-        double normB = 0.0;
-
-        for (int i = 0; i < vectorA.length; i++)
-        {
-            dotProduct += vectorA[i] * vectorB[i];
-            normA += vectorA[i] * vectorA[i];
-            normB += vectorB[i] * vectorB[i];
-        }
-
-        if (normA == 0.0 || normB == 0.0)
-        {
-            throw new IllegalArgumentException("One or both vectors have zero norm");
-        }
-
-        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
     }
 
     public Map<Integer, double[]> getNodeMap()
