@@ -106,7 +106,7 @@ public class Node2VecLearn
             tempFile = File.createTempFile("walks", ".txt");
             logger.info("creat temp file {}.", tempFile.getAbsolutePath());
             randomWalk.writeSimulateWalks(tempFile.getAbsolutePath());
-            this.word2vec.fitFile(tempFile.getAbsolutePath());
+            this.word2vec.fitFile(tempFile.getAbsolutePath(), 1);
         }
         finally
         {

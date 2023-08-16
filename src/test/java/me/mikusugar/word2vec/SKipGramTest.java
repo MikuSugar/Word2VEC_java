@@ -16,14 +16,14 @@ public class SKipGramTest
     private final static String corpusModelName = "corpus.emb";
 
     @Test
-    public void fitCorpus() throws IOException
+    public void fitCorpus() throws Exception
     {
         final String corpusFilePath = HelpTestUtils.getResourcePath() + "/corpus.txt";
         final SkipGram skipGram = new SkipGram();
         skipGram.setLayerSize(300);
         skipGram.setMAX_EXP(10);
         skipGram.setNegative(10);
-        skipGram.fitFile(corpusFilePath);
+        skipGram.fitFile(corpusFilePath, 8);
         skipGram.saveBinaryModel(corpusModelName);
     }
 

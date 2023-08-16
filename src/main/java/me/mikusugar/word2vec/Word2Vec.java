@@ -15,6 +15,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @description
@@ -68,7 +69,7 @@ public abstract class Word2Vec
 
     }
 
-    protected int wordCount = 0;
+    protected AtomicInteger wordCount = new AtomicInteger(0);
 
     protected int lastWordCount = 0;
 
@@ -76,6 +77,7 @@ public abstract class Word2Vec
 
     protected void updateLearRate()
     {
+        int wordCount = this.wordCount.get();
         if (wordCount - lastWordCount > 10000)
         {
             logger.info("alpha: {},Progress: {}%", alpha,
@@ -191,7 +193,7 @@ public abstract class Word2Vec
         }
     }
 
-    public abstract void fitFile(String filePath) throws Exception;
+    public abstract void fitFile(String filePath, int threads) throws Exception;
 
     protected void initNet()
     {
